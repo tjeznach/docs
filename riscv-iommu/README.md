@@ -73,4 +73,20 @@ Run CrosVM using NVMe1n1 as direct attached root drive.
 $ crosvm --no-syslog run --disable-sandbox -p 'nokaslr console=ttyS0 root=/dev/nvme0n1' --vfio "/sys/bus/pci/devices/$BDF" /usr/share/Image
 ```
 
+## RISC-V Guest
 
+```
+# cat /proc/cpuinfo
+processor	: 0
+hart		: 0
+isa		: rv64iafdc_smaia_ssaia
+mmu		: sv57
+mvendorid	: 0x0
+marchid		: 0x7015e
+mimpid		: 0x7015e
+```
+
+```
+# cat /sys/firmware/devicetree/base/compatible
+linux,dummy-virt
+```
