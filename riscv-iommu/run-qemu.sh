@@ -93,9 +93,14 @@ NVME0="nvme0.img,format=raw"
 NVME1="nvme1.img,format=raw"
 # release/Fedora-Developer-37-20221130.n.0-nvme.raw.img,format=raw"
 
+die() {
+    echo $*
+    exit 1
+}
+
 test -x "${QEMU}" || die "Can't find QEMU: ${QEMU}"
-test -x "${KERNEL}" || die "Can't find KERNEL: ${KERNEL}"
-test -x "${OPEN_SBI}" || die "Can't find OPEN_SBI: ${OPEN_SBI}"
+test -f "${KERNEL}" || die "Can't find KERNEL: ${KERNEL}"
+test -f "${OPEN_SBI}" || die "Can't find OPEN_SBI: ${OPEN_SBI}"
 
 QARGS=""
 # machine definition
@@ -116,7 +121,7 @@ QARGS="${QARGS} -device nvme,serial=87654321,drive=nvme1,addr=4.0"
 QARGS="${QARGS} -device e1000,romfile=,netdev=host-net,netdev=guest-net,addr=9.0"
 
 # kernel arguments
-KARGS="nokaslr earlycon=sbi console=ttyS0 root=/dev/nvme0n1 ro"
+KARGS="nokaslr earlycon=sbi console=ttyS0 root=/dev/nvme0n1"
 
 # run qemu
 ${QEMU} -bios ${OPEN_SBI} -append "${KARGS}" -kernel ${KERNEL} ${QARGS}
