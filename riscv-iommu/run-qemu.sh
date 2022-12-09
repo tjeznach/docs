@@ -87,7 +87,7 @@ cd "${TOP}"
 
 QEMU="qemu/build/qemu-system-riscv64"
 KERNEL="linux/build/arch/riscv/boot/Image"
-OPEN_SBI="qemu/build/platform/generic/firmware/fw_jump.elf "
+OPEN_SBI="qemu/build/platform/generic/firmware/fw_jump.elf"
 
 NVME0="nvme0.img,format=raw"
 NVME1="nvme1.img,format=raw"
