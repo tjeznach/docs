@@ -13,7 +13,7 @@ Install tools and dependencies required for each project:
 Run simple script to fetch, build and run experiment.
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://github.com/tjeznach/docs/blob/master/riscv-iommu/run-qemu.sh | bash
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/tjeznach/docs/master/riscv-iommu/run-qemu.sh | bash
 ```
 
 ## RISC-V Host
