@@ -18,6 +18,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/tjeznach/
 
 ## RISC-V Host
 
+Login as `root`, no password.
+
 ```
 $ echo "$(</sys/firmware/devicetree/base/model)"
 riscv-virtio,qemu
@@ -25,52 +27,34 @@ riscv-virtio,qemu
 $ cat /proc/cpuinfo
 processor	: 0
 hart		: 0
-isa		: rv64imafdch_smaia_ssaia_sstc_zihintpause
+isa		: rv64imafdch_zicbom_zicboz_zihintpause_zbb_smaia_ssaia_sstc
 mmu		: sv57
 mvendorid	: 0x0
-marchid		: 0x7015e
-mimpid		: 0x7015e
+marchid		: 0x80032
+mimpid		: 0x80032
 
 processor	: 1
 hart		: 1
-isa		: rv64imafdch_smaia_ssaia_sstc_zihintpause
+isa		: rv64imafdch_zicbom_zicboz_zihintpause_zbb_smaia_ssaia_sstc
 mmu		: sv57
 mvendorid	: 0x0
-marchid		: 0x7015e
-mimpid		: 0x7015e
+marchid		: 0x80032
+mimpid		: 0x80032
 
-
-$ ls /sys/bus/pci/devices/0000\:00\:0?.0/iommu -l
-lrwxrwxrwx 1 root root 0 Dec  9 06:45 /sys/bus/pci/devices/0000:00:03.0/iommu -> ../../../../../virtual/iommu/riscv-iommu@40000c000
-lrwxrwxrwx 1 root root 0 Dec  9 06:45 /sys/bus/pci/devices/0000:00:04.0/iommu -> ../../../../../virtual/iommu/riscv-iommu@40000c000
-lrwxrwxrwx 1 root root 0 Dec  9 06:45 /sys/bus/pci/devices/0000:00:07.0/iommu -> ../../../../../virtual/iommu/riscv-iommu@40000c000
-lrwxrwxrwx 1 root root 0 Dec  9 06:45 /sys/bus/pci/devices/0000:00:09.0/iommu -> ../../../../../virtual/iommu/riscv-iommu@40000c000
-
-$ ls /sys/bus/pci/devices/0000\:00\:0?.0/iommu_group -l
-lrwxrwxrwx 1 root root 0 Dec  9 06:45 /sys/bus/pci/devices/0000:00:03.0/iommu_group -> ../../../../../../kernel/iommu_groups/0
-lrwxrwxrwx 1 root root 0 Dec  9 06:45 /sys/bus/pci/devices/0000:00:04.0/iommu_group -> ../../../../../../kernel/iommu_groups/1
-lrwxrwxrwx 1 root root 0 Dec  9 06:45 /sys/bus/pci/devices/0000:00:07.0/iommu_group -> ../../../../../../kernel/iommu_groups/3
-lrwxrwxrwx 1 root root 0 Dec  9 06:45 /sys/bus/pci/devices/0000:00:09.0/iommu_group -> ../../../../../../kernel/iommu_groups/2
-
+~# ls /sys/bus/pci/devices/0000\:00\:0?.0/iommu_group -l
+lrwxrwxrwx 1 root root 0 Jun  8 22:41 /sys/bus/pci/devices/0000:00:03.0/iommu_group -> ../../../../../../kernel/iommu_groups/1
+lrwxrwxrwx 1 root root 0 Jun  8 22:41 /sys/bus/pci/devices/0000:00:04.0/iommu_group -> ../../../../../../kernel/iommu_groups/0
+lrwxrwxrwx 1 root root 0 Jun  8 22:41 /sys/bus/pci/devices/0000:00:07.0/iommu_group -> ../../../../../../kernel/iommu_groups/2
+~# ls /sys/bus/pci/devices/0000\:00\:0?.0/iommu -l
+lrwxrwxrwx 1 root root 0 Jun  8 22:42 /sys/bus/pci/devices/0000:00:03.0/iommu -> ../../../../../virtual/iommu/riscv-iommu@40000c000
+lrwxrwxrwx 1 root root 0 Jun  8 22:42 /sys/bus/pci/devices/0000:00:04.0/iommu -> ../../../../../virtual/iommu/riscv-iommu@40000c000
+lrwxrwxrwx 1 root root 0 Jun  8 22:42 /sys/bus/pci/devices/0000:00:07.0/iommu -> ../../../../../virtual/iommu/riscv-iommu@40000c000
 ```
 
-Attach NVMe1n1 to VFIO-PCI
+Run CrosVM using PCIe device 0000:00:04.0 as direct attached storage and 0000:00:09.0 as network devices.
 
 ```
-$ export BDF="0000:00:04.0"
-$ export DID="1b36 0010"
-$ echo "$BDF" > /sys/bus/pci/devices/$BDF/driver/unbind
-$ echo "$DID" > /sys/bus/pci/drivers/vfio-pci/new_id
-
-$ ls /dev/vfio -l
-crw------- 1 root root 246,   0 Dec  9 06:44 1
-crw-rw-rw- 1 root root  10, 196 Dec  9 06:43 vfio
-```
-
-Run CrosVM using NVMe1n1 as direct attached root drive.
-
-```
-$ crosvm --no-syslog run --disable-sandbox -p 'nokaslr console=ttyS0 root=/dev/nvme0n1' --vfio "/sys/bus/pci/devices/$BDF" /usr/share/Image
+$ crosvm.cli
 ```
 
 ## RISC-V Guest
