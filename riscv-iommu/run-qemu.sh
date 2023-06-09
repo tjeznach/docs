@@ -3,6 +3,7 @@
 set -p
 
 TOP=`realpath .`
+CROSS_COMPILE="riscv64-linux-gnu-"
 
 fetch_all() {
     cd "${TOP}"
@@ -36,13 +37,19 @@ build_qemu() {
     ../configure --target-list="riscv64-softmmu"
     make -j$(nproc)
     cd "${TOP}/qemu"
-    make -C roms/opensbi CROSS_COMPILE=riscv64-linux-gnu- O=../../build PLATFORM_RISCV_XLEN=64 PLATFORM=generic -j $(nproc)
+    make -C roms/opensbi CROSS_COMPILE=${CROSS_COMPILE} O=../../build PLATFORM_RISCV_XLEN=64 PLATFORM=generic -j $(nproc)
 }
 
 build_kernel() {
     cd "${TOP}/linux"
-    mkdir build
-    make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- KBUILD_DEFCONFIG=iommu_virt_defconfig O=build -j$(nproc) defconfig Image
+    if [[ ! -d build ]]; then
+        mkdir build
+        make ARCH=riscv CROSS_COMPILE=${CROSS_COMPILE} O=build -j$(nproc) defconfig
+        cd build
+        ARCH=riscv CROSS_COMPILE=${CROSS_COMPILE} ../scripts/kconfig/merge_config.sh .config ../../vfio.config
+        cd ..
+    fi
+    make ARCH=riscv CROSS_COMPILE=${CROSS_COMPILE} O=build -j$(nproc) Image
 }
 
 build_crosvm() {
@@ -69,6 +76,7 @@ build_rootfs() {
         sudo cp crosvm/target/riscv64gc-unknown-linux-gnu/release/crosvm $REL/usr/bin
         sudo cp linux/build/arch/riscv/boot/Image $REL/usr/share/Image
         sudo echo 'riscv-host' > $REL/etc/hostname
+        sudo cp crosvm.cli $REL/usr/bin
         sudo umount $REL
         cp $REL.img nvme0.img
     fi
@@ -111,17 +119,17 @@ QARGS="${QARGS} -m 4G -object memory-backend-file,id=sysmem,mem-path=/dev/shm/4g
 QARGS="${QARGS} -drive file=${NVME0},read-only=off,id=nvme0"
 QARGS="${QARGS} -drive file=${NVME1},read-only=off,id=nvme1" 
 QARGS="${QARGS} -netdev user,id=host-net,hostfwd=tcp::2223-:23"
-QARGS="${QARGS} -netdev user,id=guest-net,hostfwd=tcp::4423-:23"
-# host devices
+# emulated devices, use virtio-blk for host OS
 QARGS="${QARGS} -device x-riscv-iommu-pci,addr=1.0"
-QARGS="${QARGS} -device nvme,serial=10101010,drive=nvme0,addr=3.0"
+QARGS="${QARGS} -device virtio-blk-pci,disable-legacy=on,disable-modern=off,iommu_platform=on,ats=on,drive=nvme0,addr=3.0"
 QARGS="${QARGS} -device virtio-net-pci,romfile=,netdev=host-net,disable-legacy=on,disable-modern=off,iommu_platform=on,ats=on,addr=7.0"
-# guest devices
 QARGS="${QARGS} -device nvme,serial=87654321,drive=nvme1,addr=4.0"
-QARGS="${QARGS} -device e1000,romfile=,netdev=host-net,netdev=guest-net,addr=9.0"
 
 # kernel arguments
-KARGS="nokaslr earlycon=sbi console=ttyS0 root=/dev/nvme0n1"
+KARGS="nokaslr earlycon=sbi console=ttyS0 root=/dev/vda"
+
+# Optional - enable IOMMU DMA translation trace
+# QARGS="${QARGS} -trace riscv_iommu_dma"
 
 # run qemu
 ${QEMU} -bios ${OPEN_SBI} -append "${KARGS}" -kernel ${KERNEL} ${QARGS}
